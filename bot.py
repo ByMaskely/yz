@@ -1,14 +1,12 @@
-
 import praw
 import requests
-import random
 import os
 
 REDDIT_CLIENT_ID = os.getenv("REDDIT_CLIENT_ID")
 REDDIT_CLIENT_SECRET = os.getenv("REDDIT_CLIENT_SECRET")
 REDDIT_USERNAME = os.getenv("REDDIT_USERNAME")
 REDDIT_PASSWORD = os.getenv("REDDIT_PASSWORD")
-REDDIT_USER_AGENT = "kgbtr-ai-bot by /u/yarrak-zeka"
+REDDIT_USER_AGENT = "python:fun-kgbtr-bot:v1.0 (by u/yarrak-zeka)"
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_MODEL = "mistralai/mixtral-8x7b-instruct"
 
@@ -17,7 +15,7 @@ def get_ai_reply(prompt):
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
         "HTTP-Referer": "https://www.reddit.com/u/yarrak-zeka",
-        "X-Title": "yarrak-zeka reddit bot"
+        "X-Title": "fun-kgbtr-reddit-bot"
     }
     data = {
         "model": OPENROUTER_MODEL,
@@ -44,15 +42,22 @@ def main():
     for mention in reddit.inbox.mentions(limit=10):
         if mention.new:
             try:
-                parent_comment = mention.parent()
+                parent = mention.parent()
+                # parent Comment mi yoksa Submission mı kontrol et
+                if isinstance(parent, praw.models.Comment):
+                    parent_text = parent.body
+                elif isinstance(parent, praw.models.Submission):
+                    parent_text = parent.selftext if parent.selftext else parent.title
+                else:
+                    parent_text = ""
+
                 post = mention.submission
-
-                prompt = f"""Post başlığı: {post.title}
-Post içeriği: {post.selftext}
-
-Üst yorum: {parent_comment.body}
-
-Yukarıdaki içeriğe KGBTR flood havasında, bol küfürlü ama zekice bir cevap ver."""
+                prompt = (
+                    f"Post başlığı: {post.title}\n"
+                    f"Post içeriği: {post.selftext}\n\n"
+                    f"Üst yorum: {parent_text}\n\n"
+                    "Yukarıdaki içeriğe KGBTR flood havasında, bol küfürlü ama zekice bir cevap ver."
+                )
 
                 reply = get_ai_reply(prompt)
                 mention.reply(reply)
